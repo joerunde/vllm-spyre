@@ -108,11 +108,14 @@ def use_torch_fx_backed_size_oblivious():
     # this setting is required to mark a dimension of size 1 as dynamic
     # for pytorch >= 2.7.1 (needed to support batch size 1 for decodes)
     # NB: this setting is disabled at the end of this function
-    from torch.fx.experimental import _config as config
+    with torch.fx.experimental._config.patch({"backed_size_oblivious": True}):
+        yield
 
-    config.backed_size_oblivious = True  # ty: ignore[invalid-assignment]
-    yield
-    config.backed_size_oblivious = False
+    # from torch.fx.experimental import _config as config
+
+    # config.backed_size_oblivious = True  # ty: ignore[invalid-assignment]
+    # yield
+    # config.backed_size_oblivious = False
 
 
 class SpyreWorker(WorkerBase):
@@ -436,7 +439,8 @@ class SpyreWorker(WorkerBase):
         num_decode_tokens = 2
         # TODO: we need 2 requests for warmup on FP8+CB
         # Check if model is quantized
-        req_count = 3 if self.model_config.quantization is not None else 2
+        # req_count = 3 if self.model_config.quantization is not None else 2
+        req_count = 2
 
         mm_model_utils = self.model_runner.get_mm_utils()
         if mm_model_utils:

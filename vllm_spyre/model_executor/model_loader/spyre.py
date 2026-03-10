@@ -366,7 +366,8 @@ class SpyreCausalLM(nn.Module):
         else:
             from fms_mo.aiu_addons.fp8.fp8_utils import ScaledTensor
 
-            batch_size = max(2, self.scheduler_config.max_num_seqs)
+            batch_size = self.scheduler_config.max_num_seqs
+            # batch_size = max(2, self.scheduler_config.max_num_seqs)
             self.past_key_value_states = [
                 (
                     ScaledTensor(
@@ -506,9 +507,9 @@ class SpyreCausalLM(nn.Module):
             if attn_metadata.is_prefill:
                 k._scale = torch.ones(1, dtype=torch.float32)
                 v._scale = torch.ones(1, dtype=torch.float32)
-            elif len(self.indices) == 1:
-                k._scale = torch.ones(2, dtype=torch.float32)
-                v._scale = torch.ones(2, dtype=torch.float32)
+            # elif len(self.indices) == 1:
+            #     k._scale = torch.ones(2, dtype=torch.float32)
+            #     v._scale = torch.ones(2, dtype=torch.float32)
             else:
                 k._scale = torch.ones(len(self.indices), dtype=torch.float32)
                 v._scale = torch.ones(len(self.indices), dtype=torch.float32)
@@ -539,6 +540,8 @@ class SpyreCausalLM(nn.Module):
         position_ids: torch.Tensor,
         attn_metadata: SpyreAttentionMetadata,
     ):
+        print("no more fp8 padding")
+        return input_ids, position_ids, attn_metadata
         # NOTE: We only need to adjust the inputs for decode with
         # batch_size=2
         if attn_metadata.is_prefill or input_ids.shape[0] > 1:
@@ -556,6 +559,7 @@ class SpyreCausalLM(nn.Module):
         return input_ids, position_ids, attn_metadata
 
     def _adjust_output_for_fp8(self, logits: torch.Tensor, attn_metadata: SpyreAttentionMetadata):
+        return logits
         if attn_metadata.is_prefill or len(self.indices) > 1:
             # skip for prefill or decode for bs>1
             return logits
